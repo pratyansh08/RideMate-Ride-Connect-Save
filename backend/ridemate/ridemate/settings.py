@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -116,11 +117,15 @@ db_url = os.getenv("DATABASE_URL", "").strip()
 if db_url:
     import dj_database_url
 
+    parsed_db_url = urlparse(db_url)
+    db_host = parsed_db_url.hostname or ""
+    ssl_required = db_host.endswith(".render.com")
+
     DATABASES = {
         "default": dj_database_url.parse(
             db_url,
             conn_max_age=600,
-            ssl_require=True,
+            ssl_require=ssl_required,
         )
     }
 else:
