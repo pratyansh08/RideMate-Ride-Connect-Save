@@ -23,6 +23,9 @@ const Navbar = () => {
         </div>
         <nav className="flex flex-wrap items-center gap-2 text-sm text-white/80">
           <ConnectionStatus />
+          <NavLink className={`${linkBase} text-white/80 hover:text-white`} to="/assistant">
+            AI Assistant
+          </NavLink>
           <NavLink className={`${linkBase} text-white/80 hover:text-white`} to="/trips/search">
             Search Trips
           </NavLink>

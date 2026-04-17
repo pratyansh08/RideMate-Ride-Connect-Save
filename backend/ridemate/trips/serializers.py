@@ -41,10 +41,20 @@ class TripSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     rider = serializers.ReadOnlyField(source="rider.id")
     trip = serializers.ReadOnlyField(source="trip.id")
+    trip_details = TripSerializer(source="trip", read_only=True)
+    driver_name = serializers.ReadOnlyField(source="trip.driver.username")
 
     class Meta:
         model = Booking
-        fields = ["id", "trip", "rider", "seats", "created_at"]
+        fields = [
+            "id",
+            "trip",
+            "trip_details",
+            "driver_name",
+            "rider",
+            "seats",
+            "created_at",
+        ]
 
     def validate_seats(self, value):
         if value <= 0:

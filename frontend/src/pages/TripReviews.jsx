@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import api from "../api/client.js";
 import { isAuthed } from "../utils/auth.js";
 
+
 const TripReviews = () => {
   const location = useLocation();
   const tripFromQuery = useMemo(() => {
@@ -13,17 +14,29 @@ const TripReviews = () => {
 
   const [tripId, setTripId] = useState(tripFromQuery);
   const [reviews, setReviews] = useState([]);
+  const [summary, setSummary] = useState("");
+  const [stats, setStats] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const fetchReviews = async () => {
     if (!tripId) return;
     setError("");
+    setMessage("");
+    setLoading(true);
     try {
-      const response = await api.get(`/api/reviews/trip/${tripId}/`);
-      setReviews(response.data);
+      const [reviewsResponse, summaryResponse] = await Promise.all([
+        api.get(`/api/reviews/trip/${tripId}/`),
+        api.get(`/api/reviews/trip/${tripId}/summary/`),
+      ]);
+      setReviews(reviewsResponse.data);
+      setSummary(summaryResponse.data.summary || "");
+      setStats(summaryResponse.data.stats || null);
     } catch (err) {
       setError("Unable to load reviews.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -49,7 +62,8 @@ const TripReviews = () => {
     try {
       await api.delete(`/api/reviews/${reviewId}/`);
       setMessage("Review deleted.");
-      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      setReviews((prev) => prev.filter((review) => review.id !== reviewId));
+      fetchReviews();
     } catch (err) {
       setError("Unable to delete review.");
     }
@@ -66,23 +80,39 @@ const TripReviews = () => {
             placeholder="Trip ID"
             className="rounded-xl border border-mist bg-white px-4 py-3"
           />
-          <button
-            type="button"
-            onClick={fetchReviews}
-            className="btn-primary"
-          >
-            Fetch reviews
+          <button type="button" onClick={fetchReviews} className="btn-primary" disabled={loading}>
+            {loading ? "Loading..." : "Fetch reviews"}
           </button>
         </div>
         {message && <p className="mt-3 text-sm text-emerald-600">{message}</p>}
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       </div>
+
+      {(summary || stats) && (
+        <div className="grid gap-4 md:grid-cols-[1.6fr_1fr]">
+          <div className="rounded-3xl border border-mist bg-white/90 p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate/50">
+              AI Summary
+            </p>
+            <p className="mt-3 text-sm leading-7 text-slate/75">{summary}</p>
+          </div>
+          <div className="rounded-3xl border border-mist bg-white/90 p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate/50">
+              Snapshot
+            </p>
+            <div className="mt-4 grid gap-3 text-sm text-slate/75">
+              <p>Total reviews: {stats?.count ?? 0}</p>
+              <p>Average rating: {stats?.average_rating ?? 0}</p>
+              <p>Positive reviews: {stats?.positive_reviews ?? 0}</p>
+              <p>Critical reviews: {stats?.critical_reviews ?? 0}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         {reviews.map((review) => (
-          <div
-            key={review.id}
-            className="rounded-3xl border border-mist bg-white/80 p-6"
-          >
+          <div key={review.id} className="rounded-3xl border border-mist bg-white/80 p-6">
             <p className="text-xs font-semibold uppercase text-slate/60">
               Rating: {review.rating} / 5
             </p>
@@ -92,9 +122,7 @@ const TripReviews = () => {
               <div className="mt-4 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() =>
-                    handleUpdate(review.id, review.rating, review.comment)
-                  }
+                  onClick={() => handleUpdate(review.id, review.rating, review.comment)}
                   className="btn-outline"
                 >
                   Update
@@ -110,7 +138,7 @@ const TripReviews = () => {
             )}
           </div>
         ))}
-        {reviews.length === 0 && (
+        {reviews.length === 0 && !loading && (
           <div className="rounded-3xl border border-dashed border-mist bg-white/60 p-8 text-center text-sm text-slate/70 md:col-span-2">
             No reviews yet.
           </div>

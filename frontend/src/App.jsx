@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
+import Chat from "./components/Chat.jsx";
+import FloatingChatWidget from "./components/FloatingChatWidget.jsx";
 import Navbar from "./components/Navbar.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Login from "./pages/Login.jsx";
@@ -23,6 +25,7 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/trips/search" element={<SearchTrips />} />
+          <Route path="/assistant" element={<Chat />} />
           <Route path="/trips/:id" element={<TripDetail />} />
           <Route
             path="/chat/trip/:id"
@@ -68,6 +71,7 @@ const App = () => {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
+      <FloatingChatWidget />
     </div>
   );
 };

@@ -12,6 +12,7 @@ def api_root(request):
         "my_trips": "/api/trips/my/",
         "join_trip": "/api/trips/join/<trip_id>/",
         "create_review": "/api/reviews/create/",
+        "chatbot": "/api/chatbot/",
         "send_message": "/api/chat/send/",
         "trip_messages": "/api/chat/trip/<trip_id>/",
     })

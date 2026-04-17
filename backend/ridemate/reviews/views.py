@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 
 from trips.models import Booking
 
+from .ai_service import summarize_trip_reviews
 from .models import Review
 from .serializers import ReviewSerializer
 
@@ -61,6 +62,16 @@ class ReviewListByTripView(APIView):
         reviews = Review.objects.filter(trip_id=trip_id).order_by("-created_at")
         serializer = ReviewSerializer(reviews, many=True)
         return Response(serializer.data)
+
+
+class ReviewSummaryByTripView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, trip_id):
+        reviews = Review.objects.filter(trip_id=trip_id).order_by("-created_at")
+        serializer = ReviewSerializer(reviews, many=True)
+        summary_payload = summarize_trip_reviews(trip_id=trip_id, reviews=serializer.data)
+        return Response(summary_payload)
 
 
 class ReviewListByUserView(APIView):

@@ -20,7 +20,7 @@ urlpatterns = [
     path('api/accounts/', include('accounts.urls')),
     path('api/trips/', include('trips.urls')),
     path('api/reviews/', include('reviews.urls')),
-    path('api/chat/', include('chat.urls')),
+    path('api/', include('chat.urls')),
 ]
 
 if settings.DEBUG:
