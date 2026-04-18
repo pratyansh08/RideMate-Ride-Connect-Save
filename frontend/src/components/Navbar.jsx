@@ -26,6 +26,9 @@ const Navbar = () => {
           <NavLink className={`${linkBase} text-white/80 hover:text-white`} to="/assistant">
             AI Assistant
           </NavLink>
+          <NavLink className={`${linkBase} text-white/80 hover:text-white`} to="/profile">
+            Profile
+          </NavLink>
           <NavLink className={`${linkBase} text-white/80 hover:text-white`} to="/trips/search">
             Search Trips
           </NavLink>

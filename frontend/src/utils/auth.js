@@ -6,6 +6,7 @@ export const setToken = (token) => {
 
 export const clearToken = () => {
   localStorage.removeItem("token");
+  localStorage.removeItem("refreshToken");
 };
 
 export const isAuthed = () => Boolean(getToken());

@@ -14,6 +14,7 @@ import MyBookings from "./pages/MyBookings.jsx";
 import GiveReview from "./pages/GiveReview.jsx";
 import TripReviews from "./pages/TripReviews.jsx";
 import TripChat from "./pages/TripChat.jsx";
+import Profile from "./pages/Profile.jsx";
 
 const App = () => {
   return (
@@ -24,6 +25,14 @@ const App = () => {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/trips/search" element={<SearchTrips />} />
           <Route path="/assistant" element={<Chat />} />
           <Route path="/trips/:id" element={<TripDetail />} />

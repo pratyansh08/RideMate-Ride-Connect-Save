@@ -20,6 +20,8 @@ services:
         sync: false
       - key: GEMINI_MODEL
         value: gemini-2.0-flash
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
   - type: static
     name: ridemate-frontend
     rootDir: frontend
@@ -27,4 +29,6 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_BASE_URL
+        sync: false
+      - key: VITE_GOOGLE_CLIENT_ID
         sync: false

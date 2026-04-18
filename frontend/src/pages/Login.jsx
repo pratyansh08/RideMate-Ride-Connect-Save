@@ -1,18 +1,105 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import api from "../api/client.js";
 import { setToken } from "../utils/auth.js";
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
 const Login = () => {
   const navigate = useNavigate();
+  const googleButtonRef = useRef(null);
   const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleReadyError, setGoogleReadyError] = useState("");
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !googleButtonRef.current) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    const existingScript = document.querySelector('script[data-google-identity="true"]');
+
+    const initializeGoogle = () => {
+      if (cancelled || !window.google?.accounts?.id || !googleButtonRef.current) {
+        return;
+      }
+
+      googleButtonRef.current.innerHTML = "";
+      setGoogleReadyError("");
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredential,
+      });
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: "outline",
+        size: "large",
+        shape: "pill",
+        text: "continue_with",
+        width: googleButtonRef.current.offsetWidth || 360,
+      });
+    };
+
+    const waitForGoogleAndInitialize = () => {
+      let attempts = 0;
+      const maxAttempts = 20;
+      const intervalId = window.setInterval(() => {
+        attempts += 1;
+        if (cancelled) {
+          window.clearInterval(intervalId);
+          return;
+        }
+        if (window.google?.accounts?.id) {
+          window.clearInterval(intervalId);
+          initializeGoogle();
+          return;
+        }
+        if (attempts >= maxAttempts) {
+          window.clearInterval(intervalId);
+          setGoogleReadyError("Google sign-in failed to load. Please refresh.");
+        }
+      }, 200);
+    };
+
+    if (existingScript) {
+      if (window.google?.accounts?.id) {
+        initializeGoogle();
+      } else {
+        waitForGoogleAndInitialize();
+      }
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.dataset.googleIdentity = "true";
+    script.onload = initializeGoogle;
+    script.onerror = () => {
+      setGoogleReadyError("Unable to load Google sign-in script.");
+    };
+    document.head.appendChild(script);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleChange = (event) => {
     setForm((prev) => ({ ...prev, [event.target.name]: event.target.value }));
+  };
+
+  const completeLogin = (payload) => {
+    setToken(payload.access);
+    localStorage.setItem("refreshToken", payload.refresh);
+    navigate("/profile");
   };
 
   const handleSubmit = async (event) => {
@@ -26,13 +113,31 @@ const Login = () => {
     setError("");
     try {
       const response = await api.post("/api/login/", form);
-      setToken(response.data.access);
-      localStorage.setItem("refreshToken", response.data.refresh);
-      navigate("/trips/search");
+      completeLogin(response.data);
     } catch (err) {
       setError("Login failed. Check username/password.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleCredential = async (googleResponse) => {
+    const token = googleResponse?.credential;
+    if (!token) {
+      setError("Google sign-in failed. Please try again.");
+      return;
+    }
+
+    setError("");
+    setGoogleLoading(true);
+    try {
+      const response = await api.post("/api/accounts/google-login/", { token });
+      completeLogin(response.data);
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setError(detail || "Google sign-in failed. Please try again.");
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -73,6 +178,26 @@ const Login = () => {
           <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? "Logging in..." : "Login"}
           </button>
+          {GOOGLE_CLIENT_ID ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-slate/40">
+                <span className="h-px flex-1 bg-mist" />
+                <span>or</span>
+                <span className="h-px flex-1 bg-mist" />
+              </div>
+              <div ref={googleButtonRef} className="min-h-11 w-full" />
+              {googleReadyError && (
+                <p className="text-xs text-red-600">{googleReadyError}</p>
+              )}
+              {googleLoading && (
+                <p className="text-xs text-slate/60">Signing in with Google...</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-slate/50">
+              Google sign-in will appear after `VITE_GOOGLE_CLIENT_ID` is configured.
+            </p>
+          )}
         </form>
         {touched && (!form.username || !form.password) && (
           <p className="mt-3 text-xs text-slate/60">All fields are required.</p>
